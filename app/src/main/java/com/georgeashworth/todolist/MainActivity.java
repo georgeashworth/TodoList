@@ -1,29 +1,24 @@
 package com.georgeashworth.todolist;
 
+import android.content.Intent;
 import android.os.Bundle;
-import android.support.design.widget.Snackbar;
-import android.support.design.widget.TextInputEditText;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.EditText;
-import android.widget.ListView;
+import android.widget.*;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import static com.georgeashworth.todolist.R.id.etNewItem;
-
 public class MainActivity extends AppCompatActivity {
     ArrayList<String> items;
     ArrayAdapter<String> itemsAdapter;
     ListView lvItems;
+
+    private final int SUCCESS_CODE = 200;
+    private final int EDIT_ITEM_CODE = 300;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,9 +46,9 @@ public class MainActivity extends AppCompatActivity {
         File filesDir = getFilesDir();
         File todoFile = new File(filesDir, "todo.txt");
         try {
-            items = new ArrayList<String>(FileUtils.readLines(todoFile));
+            items = new ArrayList<>(FileUtils.readLines(todoFile));
         } catch (IOException e) {
-            items = new ArrayList<String>();
+            items = new ArrayList<>();
         }
     }
 
@@ -71,8 +66,7 @@ public class MainActivity extends AppCompatActivity {
         lvItems.setOnItemLongClickListener(
                 new AdapterView.OnItemLongClickListener() {
                     @Override
-                    public boolean onItemLongClick(AdapterView<?> adapter,
-                                                   View item, int pos, long id) {
+                    public boolean onItemLongClick(AdapterView<?> adapter, View item, int pos, long id) {
                         items.remove(pos);
                         itemsAdapter.notifyDataSetChanged();
                         writeItems();
@@ -80,27 +74,31 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
         );
+
+        lvItems.setOnItemClickListener(
+                new AdapterView.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(AdapterView<?> adapter, View item, int pos, long id) {
+                        launchEditView(items.get(pos), pos);
+                    }
+                }
+        );
+    }
+
+    private void launchEditView(String item, int pos) {
+        Intent i = new Intent(MainActivity.this, EditItemActivity.class);
+        i.putExtra("itemText", item);
+        i.putExtra("itemPos", pos);
+        startActivityForResult(i, EDIT_ITEM_CODE);
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode == SUCCESS_CODE && requestCode == EDIT_ITEM_CODE) {
+            String itemText = data.getExtras().getString("itemText");
+            int pos = data.getExtras().getInt("itemPos");
+            items.set(pos, itemText);
+            writeItems();
         }
-
-        return super.onOptionsItemSelected(item);
     }
 }
